@@ -1,3 +1,4 @@
+import collections
 from Map import Map_Obj
 import numpy as np
 
@@ -19,6 +20,7 @@ class _SearchNode:
 class AStar:
     def __init__(self, task, distance="Euclidian", diagonal_movement=True):
         self.map = Map_Obj(task=task)
+        self.solution = None
         self.open_set = {}
         self.closed_set = []
         self.S = {}
@@ -51,8 +53,8 @@ class AStar:
 
             # Solution?
             if x.state == goal:
-                print("solution")
-                return x, True
+                self.solution = x
+                return
 
             # Generate successors to parent node (x)
             successors = generate_all_successors(x, self.diagonal_movement)
@@ -77,15 +79,28 @@ class AStar:
                         self.open_set[str(S.state)] = S.f
                         self.S[str(S.state)] = S
                         # Sort dict -> ascending values
-                        # self.open_set = sorted(
-                        #     self.open_set.items(), key=lambda x: x[1]
-                        # )
+                        self.open_set = collections.OrderedDict(
+                            sorted(
+                                self.open_set.items(), key=lambda x: x[1], reverse=True
+                            )
+                        )
 
                     # Node exist, Cheaper path?
                     elif x.g + cost < S.g:
                         attach_and_eval(S, x, cost, goal, self.distance)
                         if S.status is False:
                             propagate_path_improvements(S, self.map)
+
+    def print(self):
+        """print the map given a solution"""
+        path = get_path(self.solution)
+
+        # Draw path
+        for point in path:
+            self.map.set_cell_value(point, " ")
+
+        # print map
+        self.map.show_map()
 
 
 def attach_and_eval(child: _SearchNode, parent: _SearchNode, cost, goal, distance):
@@ -200,3 +215,21 @@ def generate_all_successors(
     for n in neighbors:
         nodes.append(_SearchNode(n))
     return nodes
+
+
+def get_path(node: _SearchNode) -> "list[list]":
+    """Will get all the points to the path
+
+    Args:
+        node (_SearchNode): the solution node
+
+    Returns:
+        list[list]: a list of all the points of the path
+    """
+    path = []
+
+    # find all the parents, i.e. the path
+    while node.parent is not None:
+        path.append(node.state)
+        node = node.parent
+    return path
