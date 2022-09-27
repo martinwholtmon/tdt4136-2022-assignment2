@@ -1,9 +1,19 @@
+"""An implementation of the A star algorithm
+
+Raises:
+    ValueError: if the selected metric to calcualte 
+                distance is not supported, e.g. euclidian / manhattan
+"""
 import collections
-from Map import Map_Obj
 import numpy as np
+from Map import Map_Obj
 
 
 class _SearchNode:
+    """This class represent a node/position in the map.
+    The state is the exact location [y,x]
+    """
+
     def __init__(self, state=None):
         self.state = state
         self.g = 0
@@ -14,10 +24,15 @@ class _SearchNode:
         self.kids: list[_SearchNode] = []
 
     def calculate_fcost(self):
+        """Calcualtes the f cost of the node"""
         self.f = self.g + self.h
 
 
 class AStar:
+    """This class, provided a map, will calculate the shortest path to a goal
+    using the A star algorithm.
+    """
+
     def __init__(self, task, distance="Euclidian", diagonal_movement=False):
         self.map = Map_Obj(task=task)
         self.solution = None
@@ -27,18 +42,19 @@ class AStar:
         self.distance = distance  # euclidian / manhattan
         self.diagonal_movement = diagonal_movement
 
-    def compute(self) -> "tuple[list, bool]":
+    def compute(self):
+        """comput the algorithm on the map."""
         goal = self.map.get_goal_pos()
         start = self.map.get_start_pos()
 
         # initial node
-        n0 = _SearchNode(start)
-        n0.g = 0
-        n0.h = heuristic(n0.state, goal, self.distance)
-        n0.calculate_fcost()
-        n0.status = True
-        self.open_set[str(n0.state)] = n0
-        self.S[str(n0.state)] = n0
+        initial_node = _SearchNode(start)
+        initial_node.g = 0
+        initial_node.h = heuristic(initial_node.state, goal, self.distance)
+        initial_node.calculate_fcost()
+        initial_node.status = True
+        self.open_set[str(initial_node.state)] = initial_node
+        self.S[str(initial_node.state)] = initial_node
 
         # Compute A*
         while True:
@@ -47,37 +63,37 @@ class AStar:
                 return [], False
 
             # pop node with lowest f cost
-            x: _SearchNode = self.S.get(self.open_set.popitem()[0])
-            x.status = False  # Closed/expanded
-            self.closed_set.append(str(x.state))
+            node: _SearchNode = self.S.get(self.open_set.popitem()[0])
+            node.status = False  # Closed/expanded
+            self.closed_set.append(str(node.state))
 
             # Solution?
-            if x.state == goal:
-                self.solution = x
+            if node.state == goal:
+                self.solution = node
                 return
 
             # Generate successors to parent node (x)
-            successors = generate_all_successors(x, self.diagonal_movement)
+            successors = generate_all_successors(node, self.diagonal_movement)
 
             # evaluate the successors - i.e. expand child nodes
-            for S in successors:
-                cost = self.map.get_cell_value(S.state)
+            for child_node in successors:
+                cost = self.map.get_cell_value(child_node.state)
 
                 # Valid position/traversable.
                 # E.g. value not -1 (out of bound) or 0 (invalid/blocked).
                 if cost > 0:
 
                     # Exist? Fetch node
-                    if str(S.state) in self.S:
-                        S = self.S.get(str(S.state))
-                    x.kids.append(S)
+                    if str(child_node.state) in self.S:
+                        child_node = self.S.get(str(child_node.state))
+                    node.kids.append(child_node)
 
                     # New node (not in open or closed set)
-                    if S.status == None:
-                        attach_and_eval(S, x, cost, goal, self.distance)
-                        S.status = True  # Open
-                        self.open_set[str(S.state)] = S.f
-                        self.S[str(S.state)] = S
+                    if child_node.status is None:
+                        attach_and_eval(child_node, node, cost, goal, self.distance)
+                        child_node.status = True  # Open
+                        self.open_set[str(child_node.state)] = child_node.f
+                        self.S[str(child_node.state)] = child_node
                         # Sort dict -> ascending values
                         self.open_set = collections.OrderedDict(
                             sorted(
@@ -86,14 +102,14 @@ class AStar:
                         )
 
                     # Node exist, Cheaper path?
-                    elif x.g + cost < S.g:
-                        attach_and_eval(S, x, cost, goal, self.distance)
-                        if S.status is False:
-                            propagate_path_improvements(S, self.map)
+                    elif node.g + cost < child_node.g:
+                        attach_and_eval(child_node, node, cost, goal, self.distance)
+                        if child_node.status is False:
+                            propagate_path_improvements(child_node, self.map)
 
     def print(self):
         """print the map"""
-        if self.solution == None:
+        if self.solution is None:
             self.map.show_map()
             return
 
@@ -112,7 +128,8 @@ class AStar:
 
 def attach_and_eval(child: _SearchNode, parent: _SearchNode, cost, goal, distance):
     """attaches a child node to the node that is now considered its best parent.
-    Will comput g (cost to move) and h (estimated cost to goal), and update the f cost for the child.
+    Will comput g (cost to move) and h (estimated cost to goal),
+    and update the f cost for the child.
 
     Args:
         child (_SearchNode): the child node/neighbor
@@ -127,7 +144,7 @@ def attach_and_eval(child: _SearchNode, parent: _SearchNode, cost, goal, distanc
     child.calculate_fcost()
 
 
-def propagate_path_improvements(parent: _SearchNode, map: Map_Obj):
+def propagate_path_improvements(parent: _SearchNode, the_map: Map_Obj):
     """Recurses through the children and updates the nodes with the best parent.
     Ensures that all nodes in the search graph are aware of their current best parent
 
@@ -136,12 +153,12 @@ def propagate_path_improvements(parent: _SearchNode, map: Map_Obj):
         map (Map_Obj): _description_
     """
     for child in parent.kids:
-        cost = map.get_cell_value(child.state)
+        cost = the_map.get_cell_value(child.state)
         if parent.g + cost < child.g:
             child.parent = parent
             child.g = parent.g + cost
             child.calculate_fcost()
-            propagate_path_improvements(child, map)
+            propagate_path_improvements(child, the_map)
 
 
 def heuristic(pos, goal, distance) -> float:
@@ -188,12 +205,8 @@ def heuristic_manhattan(pos, goal) -> float:
     return NotImplementedError
 
 
-def get_successors_to_node() -> list:
-    return NotImplementedError
-
-
 def generate_all_successors(
-    x: _SearchNode, diagonal_movement: bool
+    node: _SearchNode, diagonal_movement: bool
 ) -> "list[_SearchNode]":
     """will get all the neighboring points to a point/position on the map
 
@@ -205,22 +218,22 @@ def generate_all_successors(
         list[_SearchNode]: the successor nodes
     """
     neighbors = [
-        [x.state[0] - 1, x.state[1] + 0],  # Up
-        [x.state[0] + 1, x.state[1] + 0],  # down
-        [x.state[0] + 0, x.state[1] + 1],  # right
-        [x.state[0] + 0, x.state[1] - 1],  # left
+        [node.state[0] - 1, node.state[1] + 0],  # Up
+        [node.state[0] + 1, node.state[1] + 0],  # down
+        [node.state[0] + 0, node.state[1] + 1],  # right
+        [node.state[0] + 0, node.state[1] - 1],  # left
     ]
-    if diagonal_movement == True:
+    if diagonal_movement is True:
         diagonal_neighbors = [
-            [x.state[0] - 1, x.state[1] - 1],  # top left
-            [x.state[0] - 1, x.state[1] + 1],  # top right
-            [x.state[0] + 1, x.state[1] - 1],  # bottom left
-            [x.state[0] + 1, x.state[1] + 1],  # bottom right
+            [node.state[0] - 1, node.state[1] - 1],  # top left
+            [node.state[0] - 1, node.state[1] + 1],  # top right
+            [node.state[0] + 1, node.state[1] - 1],  # bottom left
+            [node.state[0] + 1, node.state[1] + 1],  # bottom right
         ]
         neighbors.extend(diagonal_neighbors)
     nodes = []
-    for n in neighbors:
-        nodes.append(_SearchNode(n))
+    for point in neighbors:
+        nodes.append(_SearchNode(point))
     return nodes
 
 
