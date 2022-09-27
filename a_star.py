@@ -18,7 +18,7 @@ class _SearchNode:
 
 
 class AStar:
-    def __init__(self, task, distance="Euclidian", diagonal_movement=True):
+    def __init__(self, task, distance="Euclidian", diagonal_movement=False):
         self.map = Map_Obj(task=task)
         self.solution = None
         self.open_set = {}
@@ -229,6 +229,9 @@ def get_path(node: _SearchNode) -> "list[list]":
     path = []
 
     # find all the parents, i.e. the path
+    # Skip first node because its the solution
+    # and does not need to be painted
+    node = node.parent
     while node.parent is not None:
         path.append(node.state)
         node = node.parent

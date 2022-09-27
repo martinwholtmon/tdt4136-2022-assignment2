@@ -6,9 +6,9 @@ def main():
     task1.compute()
     task1.print()
 
-    # task2 = AStar(task=2)
-    # task2.compute()
-    # task2.print()
+    task2 = AStar(task=2)
+    task2.compute()
+    task2.print()
 
 
 if __name__ == "__main__":
