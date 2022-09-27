@@ -99,6 +99,10 @@ class AStar:
         for point in path:
             self.map.set_cell_value(point, " ")
 
+        # Repaint goal/start position
+        self.map.set_cell_value(self.map.get_goal_pos(), " G ")
+        self.map.set_cell_value(self.map.get_start_pos(), " S ")
+
         # print map
         self.map.show_map()
 
@@ -228,10 +232,7 @@ def get_path(node: _SearchNode) -> "list[list]":
     """
     path = []
 
-    # find all the parents, i.e. the path
-    # Skip first node because its the solution
-    # and does not need to be painted
-    node = node.parent
+    # find all the parents, i.e. the path to goal position
     while node.parent is not None:
         path.append(node.state)
         node = node.parent
