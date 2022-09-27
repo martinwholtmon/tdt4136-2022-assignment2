@@ -262,3 +262,25 @@ def get_path(node: _SearchNode) -> "list[list]":
         path.append(node.state)
         node = node.parent
     return path
+
+
+def main():
+    task1 = AStar(task=1)
+    task1.compute()
+    task1.print()
+
+    task2 = AStar(task=2)
+    task2.compute()
+    task2.print()
+
+    task3 = AStar(task=3)
+    task3.compute()
+    task3.print()
+
+    task3 = AStar(task=4)
+    task3.compute()
+    task3.print()
+
+
+if __name__ == "__main__":
+    main()
