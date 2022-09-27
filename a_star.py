@@ -1,7 +1,7 @@
 """An implementation of the A star algorithm
 
 Raises:
-    ValueError: if the selected metric to calcualte 
+    ValueError: if the selected metric to calcualte
                 distance is not supported, e.g. euclidian / manhattan
 """
 import collections
@@ -196,13 +196,22 @@ def heuristic_euclidian(pos, goal) -> float:
         goal (list): the goal [y,x]
 
     Returns:
-        float: the euclidian distance
+        float: the euclidian distance from point to goal
     """
     return np.linalg.norm(np.asarray(pos) - np.asarray(goal))
 
 
 def heuristic_manhattan(pos, goal) -> float:
-    return NotImplementedError
+    """Calculates the manhattan distance between two points
+
+    Args:
+        pos (list): a point in the map [y,x]
+        goal (list): the goal [y,x]
+
+    Returns:
+        float: the manhattan distance from point to goal
+    """
+    return sum(abs(val1 - val2) for val1, val2 in zip(pos, goal))
 
 
 def generate_all_successors(
