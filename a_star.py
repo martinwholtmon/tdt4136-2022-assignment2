@@ -50,27 +50,15 @@ class AStar:
                 return x, True
 
             # Find neighbor points
-            neighbors = [
-                [x.state[0] - 1, x.state[1] + 0],  # Up
-                [x.state[0] + 1, x.state[1] + 0],  # down
-                [x.state[0] + 0, x.state[1] + 1],  # right
-                [x.state[0] + 0, x.state[1] - 1],  # left
-            ]
-            if self.diagonal_movement == True:
-                diagonal_neighbors = [
-                    [x.state[0] - 1, x.state[1] - 1],  # top left
-                    [x.state[0] - 1, x.state[1] + 1],  # top right
-                    [x.state[0] + 1, x.state[1] - 1],  # bottom left
-                    [x.state[0] + 1, x.state[1] + 1],  # bottom right
-                ]
-                neighbors.extend(diagonal_neighbors)
+            neighbors = get_neighboring_points(x, self.diagonal_movement)
+
             # Generate successors to node
             for neighbor in neighbors:
                 # Valid position/traversable.
                 # E.g. value not -1 (out of bound) or 0 (invalid/blocked).
                 if self.map.get_cell_value(neighbor) > 0:
                     # Exist?
-                    if neighbor not in self.S:
+                    if str(neighbor) not in self.S:
                         print("yda")
 
 
@@ -86,8 +74,8 @@ def heuristic(pos, goal, distance) -> float:
     """Calulate the heuristic (distance to goal)
 
     Args:
-        pos (list): the current position
-        goal (list): the position of the goal
+        pos (list): the current position [y,x]
+        goal (list): the position of the goal [y,x]
         distance (str): metric used to calculate distance
 
     Raises:
@@ -113,8 +101,8 @@ def heuristic_euclidian(pos, goal) -> float:
     """Calculates the euclidian distance between two points
 
     Args:
-        pos (list): a point as a list [x,y]
-        goal (list): the goal [x,y]
+        pos (list): a point as a list [y,x]
+        goal (list): the goal [y,x]
 
     Returns:
         float: the euclidian distance
@@ -128,3 +116,27 @@ def heuristic_manhattan(pos, goal) -> float:
 
 def get_successors_to_node() -> list:
     return NotImplementedError
+
+
+def get_neighboring_points(x, diagonal_movement) -> "list[list]":
+    """will get all the neighboring points to a point/position on the map
+
+    Args:
+        x (_SearchNode): a node/point on the map
+        diagonal_movement (bool): if diagonal movement is allowed or not
+    """
+    neighbors = [
+        [x.state[0] - 1, x.state[1] + 0],  # Up
+        [x.state[0] + 1, x.state[1] + 0],  # down
+        [x.state[0] + 0, x.state[1] + 1],  # right
+        [x.state[0] + 0, x.state[1] - 1],  # left
+    ]
+    if diagonal_movement == True:
+        diagonal_neighbors = [
+            [x.state[0] - 1, x.state[1] - 1],  # top left
+            [x.state[0] - 1, x.state[1] + 1],  # top right
+            [x.state[0] + 1, x.state[1] - 1],  # bottom left
+            [x.state[0] + 1, x.state[1] + 1],  # bottom right
+        ]
+        neighbors.extend(diagonal_neighbors)
+    return neighbors
