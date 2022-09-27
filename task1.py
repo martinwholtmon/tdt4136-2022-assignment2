@@ -10,6 +10,14 @@ def main():
     task2.compute()
     task2.print()
 
+    task3 = AStar(task=3)
+    task3.compute()
+    task3.print()
+
+    task3 = AStar(task=4)
+    task3.compute()
+    task3.print()
+
 
 if __name__ == "__main__":
     main()

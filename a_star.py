@@ -92,10 +92,13 @@ class AStar:
                             propagate_path_improvements(S, self.map)
 
     def print(self):
-        """print the map given a solution"""
-        path = get_path(self.solution)
+        """print the map"""
+        if self.solution == None:
+            self.map.show_map()
+            return
 
-        # Draw path
+        # get and draw path
+        path = get_path(self.solution)
         for point in path:
             self.map.set_cell_value(point, " ")
 
