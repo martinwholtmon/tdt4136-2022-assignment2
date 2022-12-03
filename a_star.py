@@ -33,14 +33,14 @@ class AStar:
     using the A star algorithm.
     """
 
-    def __init__(self, task, distance="Euclidian", diagonal_movement=True):
+    def __init__(self, task, distance="Euclidian", diagonal_movement=False):
         self.map = Map_Obj(task=task)
-        self.solution = None
         self.open_set = {}
         self.closed_set = []
         self.S = {}
-        self.distance = distance  # euclidian / manhattan
+        self.heuristic = heuristic(distance)  # euclidian / manhattan
         self.diagonal_movement = diagonal_movement
+        self.solution = None
 
     def compute(self):
         """comput the algorithm on the map."""
@@ -49,8 +49,7 @@ class AStar:
 
         # initial node
         initial_node = _SearchNode(start)
-        initial_node.g = 0
-        initial_node.h = heuristic(initial_node.state, goal, self.distance)
+        initial_node.h = self.heuristic(initial_node.state, goal)
         initial_node.calculate_fcost()
         initial_node.status = True
         self.open_set[str(initial_node.state)] = initial_node
@@ -73,7 +72,7 @@ class AStar:
                 return
 
             # Generate successors to parent node (x)
-            successors = generate_all_successors(node, self.diagonal_movement)
+            successors = self.generate_all_successors(node)
 
             # evaluate the successors - i.e. expand child nodes
             for child_node in successors:
@@ -90,10 +89,13 @@ class AStar:
 
                     # New node (not in open or closed set)
                     if child_node.status is None:
-                        attach_and_eval(child_node, node, cost, goal, self.distance)
+                        self.attach_and_eval(child_node, node, cost, goal)
+
+                        # Add to open set (to be expanded)
                         child_node.status = True  # Open
                         self.open_set[str(child_node.state)] = child_node.f
                         self.S[str(child_node.state)] = child_node
+
                         # Sort dict -> ascending values
                         self.open_set = collections.OrderedDict(
                             sorted(
@@ -103,9 +105,73 @@ class AStar:
 
                     # Node exist, Cheaper path?
                     elif node.g + cost < child_node.g:
-                        attach_and_eval(child_node, node, cost, goal, self.distance)
+                        self.attach_and_eval(child_node, node, cost, goal)
                         if child_node.status is False:
-                            propagate_path_improvements(child_node, self.map)
+                            # If node is in closed set, but has cheaper path,
+                            # update the path to the parent with the new cheaper path.
+                            # Essentially re-expand node
+                            self.propagate_path_improvements(child_node, self.map)
+
+    def attach_and_eval(self, child: _SearchNode, parent: _SearchNode, cost, goal):
+        """attaches a child node to the node that is now considered its best parent.
+        Will comput g (cost to move) and h (estimated cost to goal),
+        and update the f cost for the child.
+
+        Args:
+            child (_SearchNode): the child node/neighbor
+            parent (_SearchNode): the parent node
+            cost (float): the cost of moving from parent to child
+            goal (list): the goal position
+        """
+        child.parent = parent
+        child.g = parent.g + cost
+        child.h = self.heuristic(child.state, goal)
+        child.calculate_fcost()
+
+    def propagate_path_improvements(self, parent: _SearchNode, the_map: Map_Obj):
+        """Recurses through the children and updates the nodes with the best parent.
+        Ensures that all nodes in the search graph are aware of their current best parent
+
+        Args:
+            parent (_SearchNode): _description_
+            map (Map_Obj): _description_
+        """
+        for child in parent.kids:
+            cost = the_map.get_cell_value(child.state)
+            if parent.g + cost < child.g:
+                child.parent = parent
+                child.g = parent.g + cost
+                child.calculate_fcost()
+                self.propagate_path_improvements(child, the_map)
+
+    def generate_all_successors(self, node: _SearchNode) -> "list[_SearchNode]":
+        """will get all the neighboring points to a point/position on the map
+
+        Args:
+            node (_SearchNode): a node/point on the map
+
+        Returns:
+            list[_SearchNode]: the successor nodes
+        """
+        neighbors = [
+            [node.state[0] - 1, node.state[1] + 0],  # Up
+            [node.state[0] + 1, node.state[1] + 0],  # down
+            [node.state[0] + 0, node.state[1] + 1],  # right
+            [node.state[0] + 0, node.state[1] - 1],  # left
+        ]
+        if self.diagonal_movement is True:
+            neighbors.extend(
+                [
+                    [node.state[0] - 1, node.state[1] - 1],  # top left
+                    [node.state[0] - 1, node.state[1] + 1],  # top right
+                    [node.state[0] + 1, node.state[1] - 1],  # bottom left
+                    [node.state[0] + 1, node.state[1] + 1],  # bottom right
+                ]
+            )
+        nodes = []
+        for point in neighbors:
+            nodes.append(_SearchNode(point))
+        return nodes
 
     def print(self):
         """print the map"""
@@ -114,7 +180,7 @@ class AStar:
             return
 
         # get and draw path
-        path = get_path(self.solution)
+        path = get_solution_path(self.solution)
         for point in path:
             self.map.set_cell_value(point, " ")
 
@@ -126,66 +192,31 @@ class AStar:
         self.map.show_map()
 
 
-def attach_and_eval(child: _SearchNode, parent: _SearchNode, cost, goal, distance):
-    """attaches a child node to the node that is now considered its best parent.
-    Will comput g (cost to move) and h (estimated cost to goal),
-    and update the f cost for the child.
-
-    Args:
-        child (_SearchNode): the child node/neighbor
-        parent (_SearchNode): the parent node
-        cost (float): the cost of moving from parent to child
-        goal (list): the goal position
-        distance (bool): metric used to calculate distance.
-    """
-    child.parent = parent
-    child.g = parent.g + cost
-    child.h = heuristic(child.state, goal, distance)
-    child.calculate_fcost()
-
-
-def propagate_path_improvements(parent: _SearchNode, the_map: Map_Obj):
-    """Recurses through the children and updates the nodes with the best parent.
-    Ensures that all nodes in the search graph are aware of their current best parent
-
-    Args:
-        parent (_SearchNode): _description_
-        map (Map_Obj): _description_
-    """
-    for child in parent.kids:
-        cost = the_map.get_cell_value(child.state)
-        if parent.g + cost < child.g:
-            child.parent = parent
-            child.g = parent.g + cost
-            child.calculate_fcost()
-            propagate_path_improvements(child, the_map)
-
-
-def heuristic(pos, goal, distance) -> float:
+def heuristic(distance) -> callable:
     """Calulate the heuristic (distance to goal)
 
     Args:
-        pos (list): the current position [y,x]
-        goal (list): the position of the goal [y,x]
         distance (str): metric used to calculate distance
 
     Raises:
-        ValueError: metric does not exist
+        NotImplementedError: metric is not supported
 
     Returns:
-        float: h(x) -> distance to goal as a float value
+        callable: heuristic function to calculate distance
     """
     supported_distances = ["euclidian", "manhattan"]
-    distance = distance.lower()
-    if distance in supported_distances:
-        if distance == supported_distances[0]:
-            return heuristic_euclidian(pos, goal)
-        if distance == supported_distances[1]:
-            return heuristic_manhattan(pos, goal)
-    else:
-        raise ValueError(
-            f"{distance}, is not supported, please use {supported_distances}"
-        )
+    functions = {
+        supported_distances[0]: heuristic_euclidian,
+        supported_distances[1]: heuristic_manhattan,
+    }
+
+    heuristic_function = functions.get(distance.lower())
+    if heuristic_function is not None:
+        return heuristic_function
+
+    raise NotImplementedError(
+        f"{distance}, is not supported, please use {supported_distances}"
+    )
 
 
 def heuristic_euclidian(pos, goal) -> float:
@@ -214,39 +245,7 @@ def heuristic_manhattan(pos, goal) -> float:
     return sum(abs(val1 - val2) for val1, val2 in zip(pos, goal))
 
 
-def generate_all_successors(
-    node: _SearchNode, diagonal_movement: bool
-) -> "list[_SearchNode]":
-    """will get all the neighboring points to a point/position on the map
-
-    Args:
-        x (_SearchNode): a node/point on the map
-        diagonal_movement (bool): if diagonal movement is allowed or not
-
-    Returns:
-        list[_SearchNode]: the successor nodes
-    """
-    neighbors = [
-        [node.state[0] - 1, node.state[1] + 0],  # Up
-        [node.state[0] + 1, node.state[1] + 0],  # down
-        [node.state[0] + 0, node.state[1] + 1],  # right
-        [node.state[0] + 0, node.state[1] - 1],  # left
-    ]
-    if diagonal_movement is True:
-        diagonal_neighbors = [
-            [node.state[0] - 1, node.state[1] - 1],  # top left
-            [node.state[0] - 1, node.state[1] + 1],  # top right
-            [node.state[0] + 1, node.state[1] - 1],  # bottom left
-            [node.state[0] + 1, node.state[1] + 1],  # bottom right
-        ]
-        neighbors.extend(diagonal_neighbors)
-    nodes = []
-    for point in neighbors:
-        nodes.append(_SearchNode(point))
-    return nodes
-
-
-def get_path(node: _SearchNode) -> "list[list]":
+def get_solution_path(node: _SearchNode) -> "list[list]":
     """Will get all the points to the path
 
     Args:
