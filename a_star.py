@@ -1,8 +1,8 @@
 """An implementation of the A star algorithm
 
 Raises:
-    ValueError: if the selected metric to calcualte
-                distance is not supported, e.g. euclidian / manhattan
+    NotImplementedError: if the selected metric to calcualte distance 
+                         is not supported
 """
 import collections
 import numpy as np
@@ -43,7 +43,7 @@ class AStar:
         self.solution = None
 
     def compute(self):
-        """comput the algorithm on the map."""
+        """compute the algorithm on the map."""
         goal = self.map.get_goal_pos()
         start = self.map.get_start_pos()
 
@@ -113,7 +113,7 @@ class AStar:
                             self.propagate_path_improvements(child_node)
 
     def attach_and_eval(self, child: _SearchNode, parent: _SearchNode, cost, goal):
-        """attaches a child node to the node that is now considered its best parent.
+        """Attaches a child node to the node that is now considered it's best parent.
         Will comput g (cost to move) and h (estimated cost to goal),
         and update the f cost for the child.
 
@@ -130,11 +130,10 @@ class AStar:
 
     def propagate_path_improvements(self, parent: _SearchNode):
         """Recurses through the children and updates the nodes with the best parent.
-        Ensures that all nodes in the search graph are aware of their current best parent
+        Ensures that all nodes in the search graph are aware of their current best parent.
 
         Args:
             parent (_SearchNode): _description_
-            map (Map_Obj): _description_
         """
         for child in parent.kids:
             cost = self.map.get_cell_value(child.state)
@@ -145,7 +144,8 @@ class AStar:
                 self.propagate_path_improvements(child)
 
     def generate_all_successors(self, node: _SearchNode) -> "list[_SearchNode]":
-        """will get all the neighboring points to a point/position on the map
+        """Generate the successor nodes (children) for a node. 
+        In this case, the neighboring points.
 
         Args:
             node (_SearchNode): a node/point on the map
@@ -174,7 +174,7 @@ class AStar:
         return nodes
 
     def print(self):
-        """print the map"""
+        """Print the map"""
         if self.solution is None:
             self.map.show_map()
             return
@@ -193,7 +193,7 @@ class AStar:
 
 
 def heuristic(distance) -> callable:
-    """Calulate the heuristic (distance to goal)
+    """Select heuristic function
 
     Args:
         distance (str): metric used to calculate distance
@@ -246,7 +246,7 @@ def heuristic_manhattan(pos, goal) -> float:
 
 
 def get_solution_path(node: _SearchNode) -> "list[list]":
-    """Will get all the points to the path
+    """Will get the path to the initial node
 
     Args:
         node (_SearchNode): the solution node
