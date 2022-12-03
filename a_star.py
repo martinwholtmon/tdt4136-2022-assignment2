@@ -110,7 +110,7 @@ class AStar:
                             # If node is in closed set, but has cheaper path,
                             # update the path to the parent with the new cheaper path.
                             # Essentially re-expand node
-                            self.propagate_path_improvements(child_node, self.map)
+                            self.propagate_path_improvements(child_node)
 
     def attach_and_eval(self, child: _SearchNode, parent: _SearchNode, cost, goal):
         """attaches a child node to the node that is now considered its best parent.
@@ -128,7 +128,7 @@ class AStar:
         child.h = self.heuristic(child.state, goal)
         child.calculate_fcost()
 
-    def propagate_path_improvements(self, parent: _SearchNode, the_map: Map_Obj):
+    def propagate_path_improvements(self, parent: _SearchNode):
         """Recurses through the children and updates the nodes with the best parent.
         Ensures that all nodes in the search graph are aware of their current best parent
 
@@ -137,12 +137,12 @@ class AStar:
             map (Map_Obj): _description_
         """
         for child in parent.kids:
-            cost = the_map.get_cell_value(child.state)
+            cost = self.map.get_cell_value(child.state)
             if parent.g + cost < child.g:
                 child.parent = parent
                 child.g = parent.g + cost
                 child.calculate_fcost()
-                self.propagate_path_improvements(child, the_map)
+                self.propagate_path_improvements(child)
 
     def generate_all_successors(self, node: _SearchNode) -> "list[_SearchNode]":
         """will get all the neighboring points to a point/position on the map
