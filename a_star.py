@@ -21,7 +21,7 @@ class _SearchNode:
         self.f = 0
         self.status = None  # True = open, False = closed
         self.parent = None
-        self.kids: list[_SearchNode] = []
+        self.kids: "list[_SearchNode]" = []
 
     def calculate_fcost(self):
         """Calcualtes the f cost of the node"""
