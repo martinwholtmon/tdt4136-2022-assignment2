@@ -9,7 +9,7 @@ import numpy as np
 from Map import Map_Obj
 
 
-class _SearchNode:
+class Node:
     """This class represent a node/position in the map.
     The state is the exact location [y,x]
     """
@@ -21,7 +21,7 @@ class _SearchNode:
         self.f = 0
         self.status = None  # True = open, False = closed
         self.parent = None
-        self.kids: "list[_SearchNode]" = []
+        self.kids: "list[Node]" = []
 
     def calculate_fcost(self):
         """Calcualtes the f cost of the node"""
@@ -48,7 +48,7 @@ class AStar:
         start = self.map.get_start_pos()
 
         # initial node
-        initial_node = _SearchNode(start)
+        initial_node = Node(start)
         initial_node.h = self.heuristic(initial_node.state, goal)
         initial_node.calculate_fcost()
         initial_node.status = True
@@ -62,7 +62,7 @@ class AStar:
                 return [], False
 
             # pop node with lowest f cost
-            node: _SearchNode = self.S.get(self.open_set.popitem()[0])
+            node: Node = self.S.get(self.open_set.popitem()[0])
             node.status = False  # Closed/expanded
             self.closed_set.append(str(node.state))
 
@@ -112,14 +112,14 @@ class AStar:
                             # Essentially re-expand node
                             self.propagate_path_improvements(child_node)
 
-    def attach_and_eval(self, child: _SearchNode, parent: _SearchNode, cost, goal):
+    def attach_and_eval(self, child: Node, parent: Node, cost, goal):
         """Attaches a child node to the node that is now considered it's best parent.
         Will comput g (cost to move) and h (estimated cost to goal),
         and update the f cost for the child.
 
         Args:
-            child (_SearchNode): the child node/neighbor
-            parent (_SearchNode): the parent node
+            child (Node): the child node/neighbor
+            parent (Node): the parent node
             cost (float): the cost of moving from parent to child
             goal (list): the goal position
         """
@@ -128,12 +128,12 @@ class AStar:
         child.h = self.heuristic(child.state, goal)
         child.calculate_fcost()
 
-    def propagate_path_improvements(self, parent: _SearchNode):
+    def propagate_path_improvements(self, parent: Node):
         """Recurses through the children and updates the nodes with the best parent.
         Ensures that all nodes in the search graph are aware of their current best parent.
 
         Args:
-            parent (_SearchNode): _description_
+            parent (Node): _description_
         """
         for child in parent.kids:
             cost = self.map.get_cell_value(child.state)
@@ -143,15 +143,15 @@ class AStar:
                 child.calculate_fcost()
                 self.propagate_path_improvements(child)
 
-    def generate_all_successors(self, node: _SearchNode) -> "list[_SearchNode]":
-        """Generate the successor nodes (children) for a node. 
+    def generate_all_successors(self, node: Node) -> "list[Node]":
+        """Generate the successor nodes (children) for a node.
         In this case, the neighboring points.
 
         Args:
-            node (_SearchNode): a node/point on the map
+            node (Node): a node/point on the map
 
         Returns:
-            list[_SearchNode]: the successor nodes
+            list[Node]: the successor nodes
         """
         neighbors = [
             [node.state[0] - 1, node.state[1] + 0],  # Up
@@ -170,7 +170,7 @@ class AStar:
             )
         nodes = []
         for point in neighbors:
-            nodes.append(_SearchNode(point))
+            nodes.append(Node(point))
         return nodes
 
     def print(self):
@@ -245,11 +245,11 @@ def heuristic_manhattan(pos, goal) -> float:
     return sum(abs(val1 - val2) for val1, val2 in zip(pos, goal))
 
 
-def get_solution_path(node: _SearchNode) -> "list[list]":
+def get_solution_path(node: Node) -> "list[list]":
     """Will get the path to the initial node
 
     Args:
-        node (_SearchNode): the solution node
+        node (Node): the solution node
 
     Returns:
         list[list]: a list of all the points of the path

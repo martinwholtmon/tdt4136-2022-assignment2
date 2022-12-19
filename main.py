@@ -15,9 +15,9 @@ def main():
     task3.compute()
     task3.print()
 
-    task3 = AStar(task=4)
-    task3.compute()
-    task3.print()
+    task4 = AStar(task=4)
+    task4.compute()
+    task4.print()
 
 
 if __name__ == "__main__":
