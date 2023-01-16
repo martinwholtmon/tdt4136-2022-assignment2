@@ -52,7 +52,7 @@ class AStar:
         initial_node.h = self.heuristic(initial_node.state, goal)
         initial_node.calculate_fcost()
         initial_node.status = True
-        self.open_set[str(initial_node.state)] = initial_node
+        self.open_set[str(initial_node.state)] = initial_node.f
         self.S[str(initial_node.state)] = initial_node
 
         # Compute A*
